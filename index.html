@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="game">
+      <div id="info-panel">
+        <p>You have {{ health }} health.</p>
+        <p>You have {{ mana }} mana.</p>
+        <hr>
+        <p>Equipped wand:</p>
+        <p>[ ][ ][ ] Spawn a random vowel.</p>
+        <p>[ ][ ][ ] Spawn a random consonant.</p>
+        <hr>
+        <p>Equipped scrolls:</p>
+        <p>No equipped scrolls.</p>
+        <hr>
+        <p>Equipped skills:</p>
+        <ul>
+          <li>Restore 5 mana every time you make a 3 letter word.</li>
+          <li>Restore 5 mana every time you make a word with a green letter.</li>
+          <li>Get 3 gold every time you make a word with a double letter.</li>
+        </ul>
+      </div>
+      <div id="gameboard">
+        <board></board>
+      </div>
+    </div>
+    <script src="game.js"></script>
+  </body>
+</html>

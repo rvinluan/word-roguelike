@@ -1,0 +1,72 @@
+body {
+  background-color: #373430;
+  font: normal normal 15px/1 "Space Mono",monospace;
+  color: white;
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 2ch;
+}
+
+li:before {
+  content: "- ";
+}
+
+li {
+  text-indent: -2ch;
+  line-height: 1.7em;
+}
+
+#game {
+  display: flex;
+}
+
+#info-panel {
+  width: 40vw;
+}
+
+#gameboard {
+  width: 60vw;
+  display: flex;
+  justify-content: center;
+}
+
+#gameboard > div {
+  display: grid;
+  grid-template-rows: repeat(6, 50px);
+  grid-template-columns: repeat(6, 50px);
+  margin: auto;
+}
+
+.tile {
+  width: 50px;
+  height: 50px;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* background: grey; */
+  /* border: 1px solid black; */
+}
+
+.tile.over {
+  border: 1px solid salmon;
+}
+
+.tile.default:empty:before {
+  content: "•";
+  color: #282724;
+}
+
+.tile.blocked:before {
+  content: "";
+  width: 90%;
+  height: 90%;
+  border-radius: 5px;
+  background-color: #282724;
+}
+
+.char {
+  cursor: pointer;
+}
