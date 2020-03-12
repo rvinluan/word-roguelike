@@ -47,7 +47,7 @@ let Board = {
         id: i
       })
       if(i < 10) {
-        let randomLetter = i % 2 == 0 ? this.randomCommonConsonant() : this.randomVowel();
+        let randomLetter = i % 2 == 0 ? this.randomConsonant() : this.randomVowel();
         charsArray.push({
           letters: randomLetter,
           color: 0
@@ -79,7 +79,7 @@ let Board = {
       return all[ Math.floor(Math.random() * all.length) ]
     },
     randomConsonant: function() {
-      let all = 'bcdfghjklmnpqrstvwxyz'.split('');
+      let all = 'bcdfghjklmnprstvwy'.split('');
       return all[ Math.floor(Math.random() * all.length) ]
     },
     randomCommonConsonant: function() {
