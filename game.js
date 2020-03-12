@@ -98,10 +98,18 @@ let Board = {
       e.target.classList.remove("over")
     },
     handleDrop: function(e) {
-      e.target.classList.remove("over")
+      const tile = e.target.closest(".tile");
+      tile.classList.remove("over")
+      //check for validity
+      if(tile.childElementCount > 0
+      || tile.classList.contains("blocked")) {
+        console.log("occupied");
+        e.preventDefault();
+        return;
+      }
       const id = e.dataTransfer.getData('text');
       const t = document.getElementById(id);
-      e.target.appendChild(t);
+      tile.appendChild(t);
     }
   },
   computed: {
