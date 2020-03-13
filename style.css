@@ -1,6 +1,7 @@
 body {
   background-color: #373430;
   color: white;
+  height: 100vh;
 }
 
 ul {
@@ -34,20 +35,21 @@ li {
   text-transform: uppercase;
   font-weight: 100;
   display: flex;
+  flex-direction: column;
   justify-content: center;
 }
 
 #gameboard > div {
   display: grid;
-  grid-template-rows: repeat(6, 50px);
-  grid-template-columns: repeat(6, 50px);
+  grid-template-rows: repeat(6, 70px);
+  grid-template-columns: repeat(6, 70px);
   margin: auto;
 }
 
 .tile {
-  width: 50px;
-  height: 50px;
-  font-size: 50px;
+  width: 70px;
+  height: 70px;
+  font-size: 65px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -74,5 +76,18 @@ li {
 }
 
 .char {
+  cursor: pointer;
+}
+
+#gameboard button {
+  outline: one;
+  border: 1px solid white;
+  background: none;
+  color: white;
+  padding: 20px;
+  margin: 0 140px;
+  font-family: "Sometimes Times";
+  letter-spacing: 2px;
+  font-size: 35px;
   cursor: pointer;
 }

@@ -10,6 +10,66 @@ function shuffle(a) {
     return a;
 }
 
+/* helpers */
+function randomVowel() {
+  let all = 'aeiou'.split('');
+  return all[ Math.floor(Math.random() * all.length) ]
+}
+function randomVowelWithY() {
+  let all = 'aeiouy'.split('');
+  return all[ Math.floor(Math.random() * all.length) ]
+}
+function randomConsonant() {
+  let all = 'bcdfghjklmnprstvwy'.split('');
+  return all[ Math.floor(Math.random() * all.length) ]
+}
+function randomCommonConsonant() {
+  let all = 'nrtlsdgbcmp'.split('');
+  return all[ Math.floor(Math.random() * all.length) ]
+}
+
+/* store */
+let Store = {
+  data: {
+      tiles: [],
+      characters: []
+  },
+  fetchData: function() {
+    return this.data;
+  }
+}
+
+function initializeGame() {
+    console.log("creating");
+    var tilesArray = [], charsArray = [];
+    for(let i = 0; i < 36; i++) {
+      tilesArray.push({
+        type: "default",
+        id: i
+      })
+      if(i < 10) {
+        let randomLetter = i % 2 == 0 ? randomConsonant() : randomVowel();
+        charsArray.push({
+          letters: randomLetter,
+          color: 0
+        })
+      } else {
+        charsArray.push(null)
+      }
+    }
+    charsArray = shuffle(charsArray);
+    let i = 3;
+    while(i > 0) {
+      let r = Math.floor(Math.random() * 36);
+      if(charsArray[r] == null && tilesArray[r].type == "default") {
+        tilesArray[r].type = "blocked";
+        i--;
+      }
+    }
+    Store.data.tiles = tilesArray;
+    Store.data.characters = charsArray;
+}
+
 /* components */
 let Char = {
   props: ['ltrs'],
@@ -35,59 +95,16 @@ let Tile = {
 let Board = {
   data: function(){
     return {
-      tiles: [],
-      characters: []
+      store: {}
     }
   },
   created: function() {
-    var tilesArray = [], charsArray = [];
-    for(let i = 0; i < 36; i++) {
-      tilesArray.push({
-        type: "default",
-        id: i
-      })
-      if(i < 10) {
-        let randomLetter = i % 2 == 0 ? this.randomConsonant() : this.randomVowel();
-        charsArray.push({
-          letters: randomLetter,
-          color: 0
-        })
-      } else {
-        charsArray.push(null)
-      }
-    }
-    charsArray = shuffle(charsArray);
-    let i = 3;
-    while(i > 0) {
-      let r = Math.floor(Math.random() * 36);
-      if(charsArray[r] == null && tilesArray[r].type == "default") {
-        tilesArray[r].type = "blocked";
-        i--;
-      }
-    }
-    this.tiles = tilesArray;
-    this.characters = charsArray;
+    this.store = Store.data;
   },
   methods: {
-    /* helpers */
-    randomVowel: function() {
-      let all = 'aeiou'.split('');
-      return all[ Math.floor(Math.random() * all.length) ]
-    },
-    randomVowelWithY: function() {
-      let all = 'aeiouy'.split('');
-      return all[ Math.floor(Math.random() * all.length) ]
-    },
-    randomConsonant: function() {
-      let all = 'bcdfghjklmnprstvwy'.split('');
-      return all[ Math.floor(Math.random() * all.length) ]
-    },
-    randomCommonConsonant: function() {
-      let all = 'nrtlsdgbcmp'.split('');
-      return all[ Math.floor(Math.random() * all.length) ]
-    },
     handleDragStart: function(e) {
-      let id = e.target.getAttribute('id');
+      const char = e.target.closest('.char')
+      let id = char.getAttribute('id');
       e.dataTransfer.setData('text/plain', id);
       // console.log(e);
     },
@@ -121,8 +138,8 @@ let Board = {
   template: `
     <div>
       <tile
-      v-bind:class="[tiles[index].type]"
-      v-for="(t, index) in tiles"
+      v-bind:class="[store.tiles[index].type]"
+      v-for="(t, index) in store.tiles"
       v-bind:key="index"
       @dragover.prevent.native
       @dragenter.prevent.native="handleDragEnter"
@@ -130,11 +147,11 @@ let Board = {
       @drop.native="handleDrop"
       >
         <char
-        v-if="characters[index]"
+        v-if="store.characters[index]"
         :id="'char' + index"
         draggable
         @dragstart.native="handleDragStart"
-        >{{characters[index].letters}}</char>
+        >{{store.characters[index].letters}}</char>
       </tile>
     </div>`
 };
@@ -144,6 +161,14 @@ var vm = new Vue({
   data: {
     health: 100,
     mana: 25
+  },
+  created: function (){
+    initializeGame();
+  },
+  methods: {
+    executeSpell: function () {
+      console.table(this.characters);
+    }
   },
   components: {
     'board': Board,
