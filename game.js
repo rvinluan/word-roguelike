@@ -50,6 +50,7 @@ function initializeGame() {
       if(i < 10) {
         let randomLetter = i % 2 == 0 ? randomConsonant() : randomVowel();
         charsArray.push({
+          id: i,
           letters: randomLetter,
           color: 0
         })
@@ -82,7 +83,7 @@ let Char = {
 let Tile = {
   data: function(){
     return {
-      innerGlyph: {letters: "g"}
+      innerGlyph: {}
     }
   },
   components: {
@@ -95,16 +96,16 @@ let Tile = {
 let Board = {
   data: function(){
     return {
-      store: {}
+      store: Store.data
     }
   },
   created: function() {
-    this.store = Store.data;
+    // this.store = Store.data;
   },
   methods: {
     handleDragStart: function(e) {
       const char = e.target.closest('.char')
-      let id = char.getAttribute('id');
+      let id = char.getAttribute('id').replace('char','');
       e.dataTransfer.setData('text/plain', id);
       // console.log(e);
     },
@@ -117,6 +118,7 @@ let Board = {
     handleDrop: function(e) {
       const tile = e.target.closest(".tile");
       tile.classList.remove("over")
+      const dropID = tile.getAttribute("id").replace('tile','');
       //check for validity
       if(tile.childElementCount > 0
       || tile.classList.contains("blocked")) {
@@ -124,9 +126,15 @@ let Board = {
         e.preventDefault();
         return;
       }
-      const id = e.dataTransfer.getData('text');
-      const t = document.getElementById(id);
-      tile.appendChild(t);
+      const originalID = e.dataTransfer.getData('text');
+      console.log(originalID);
+      const tempChar = Store.data.characters[originalID];
+      this.store.characters.splice(dropID, 1, tempChar);
+      this.store.characters.splice(originalID, 1, null);
+      console.log(Store.data.characters);
+      console.log(this.store.characters);
+      // const t = document.getElementById(id);
+      // tile.appendChild(t);
     }
   },
   computed: {
@@ -140,7 +148,8 @@ let Board = {
       <tile
       v-bind:class="[store.tiles[index].type]"
       v-for="(t, index) in store.tiles"
-      v-bind:key="index"
+      :key="index"
+      :id="'tile'+index"
       @dragover.prevent.native
       @dragenter.prevent.native="handleDragEnter"
       @dragleave.native="handleDragLeave"
@@ -167,7 +176,7 @@ var vm = new Vue({
   },
   methods: {
     executeSpell: function () {
-      console.table(this.characters);
+      console.table(Store.data.characters);
     }
   },
   components: {
