@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
   </head>
   <body>
-    <div id="game">
+    <div id="game" @keydown="keypress">
       <div id="info-panel">
         <p>You have {{ health }} health.</p>
         <p>You have {{ mana }} mana.</p>
@@ -25,6 +25,7 @@
           <li>Restore 5 mana every time you make a word with a green letter.</li>
           <li>Get 3 gold every time you make a word with a double letter.</li>
         </ul>
+        <p class="events"></p>
       </div>
       <div id="gameboard">
         <board></board>

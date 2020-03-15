@@ -10,6 +10,22 @@ function shuffle(a) {
     return a;
 }
 
+function loadDictionary() {
+  function reqListener () {
+    // console.log(this.responseText);
+    window.dictionary = this.responseText.split("\n");
+  }
+
+  var oReq = new XMLHttpRequest();
+  oReq.addEventListener("load", reqListener);
+  oReq.open("GET", "wordlist.txt");
+  oReq.send();
+}
+
+function checkDictionary(word) {
+  return window.dictionary.includes(word.toLowerCase());
+}
+
 /* helpers */
 function randomVowel() {
   let all = 'aeiou'.split('');
@@ -27,20 +43,20 @@ function randomCommonConsonant() {
   let all = 'nrtlsdgbcmp'.split('');
   return all[ Math.floor(Math.random() * all.length) ]
 }
+function randomDouble() {
+  let all = 'th,er,ie,st,on'.split(',');
+  return all[ Math.floor(Math.random() * all.length) ]
+}
 
 /* store */
-let Store = {
-  data: {
-      tiles: [],
-      characters: []
-  },
-  fetchData: function() {
-    return this.data;
+let State = {
+  board: {
+    tiles: [],
+    characters: []
   }
 }
 
 function initializeGame() {
-    console.log("creating");
     var tilesArray = [], charsArray = [];
     for(let i = 0; i < 36; i++) {
       tilesArray.push({
@@ -49,6 +65,14 @@ function initializeGame() {
       })
       if(i < 10) {
         let randomLetter = i % 2 == 0 ? randomConsonant() : randomVowel();
+        if(i >= 8 && Math.random() > 0.5) {
+          randomLetter = randomDouble();
+          // if(Math.random() > 0.5) {
+          //   randomLetter = randomConsonant();
+          // } else {
+          //   randomLetter = randomVowel();
+          // }
+        }
         charsArray.push({
           id: i,
           letters: randomLetter,
@@ -67,8 +91,8 @@ function initializeGame() {
         i--;
       }
     }
-    Store.data.tiles = tilesArray;
-    Store.data.characters = charsArray;
+    State.board.tiles = tilesArray;
+    State.board.characters = charsArray;
 }
 
 /* components */
@@ -77,7 +101,7 @@ let Char = {
   data: function(){
     return {}
   },
-  template: '<div class="char"><slot></slot></div>'
+  template: '<p class="char"><slot></slot></p>'
 };
 
 let Tile = {
@@ -96,15 +120,23 @@ let Tile = {
 let Board = {
   data: function(){
     return {
-      store: Store.data
+      state: State.board
     }
   },
   created: function() {
-    // this.store = Store.data;
   },
   methods: {
     handleDragStart: function(e) {
-      const char = e.target.closest('.char')
+      let char;
+      if(e.target.closest) {
+        // console.log(e.target);
+        char = e.target.closest('.char')
+      } else {
+        // console.log("couldn't get closest, here was the target:");
+        // console.log(e.target);
+        // debugger;
+        char = e.target.parentElement;
+      }
       let id = char.getAttribute('id').replace('char','');
       e.dataTransfer.setData('text/plain', id);
       // console.log(e);
@@ -116,7 +148,12 @@ let Board = {
       e.target.classList.remove("over")
     },
     handleDrop: function(e) {
-      const tile = e.target.closest(".tile");
+      let tile;
+      if(e.target.closest) {
+        tile = e.target.closest(".tile");
+      } else {
+        debugger;
+      }
       tile.classList.remove("over")
       const dropID = tile.getAttribute("id").replace('tile','');
       //check for validity
@@ -127,14 +164,11 @@ let Board = {
         return;
       }
       const originalID = e.dataTransfer.getData('text');
-      console.log(originalID);
-      const tempChar = Store.data.characters[originalID];
-      this.store.characters.splice(dropID, 1, tempChar);
-      this.store.characters.splice(originalID, 1, null);
-      console.log(Store.data.characters);
-      console.log(this.store.characters);
-      // const t = document.getElementById(id);
-      // tile.appendChild(t);
+      const tempChar = State.board.characters[originalID];
+      State.board.characters.splice(dropID, 1, tempChar);
+      State.board.characters.splice(originalID, 1, null);
+      // console.log(State.board.characters);
+      // console.log(this.State.characters);
     }
   },
   computed: {
@@ -146,8 +180,8 @@ let Board = {
   template: `
     <div>
       <tile
-      v-bind:class="[store.tiles[index].type]"
-      v-for="(t, index) in store.tiles"
+      v-bind:class="[state.tiles[index].type]"
+      v-for="(t, index) in state.tiles"
       :key="index"
       :id="'tile'+index"
       @dragover.prevent.native
@@ -156,11 +190,11 @@ let Board = {
       @drop.native="handleDrop"
       >
         <char
-        v-if="store.characters[index]"
+        v-if="state.characters[index]"
         :id="'char' + index"
         draggable
-        @dragstart.native="handleDragStart"
-        >{{store.characters[index].letters}}</char>
+        @dragstart.stop.native="handleDragStart"
+        >{{state.characters[index].letters}}</char>
       </tile>
     </div>`
 };
@@ -172,12 +206,137 @@ var vm = new Vue({
     mana: 25
   },
   created: function (){
+    window.addEventListener('keydown', this.keypress);
+    loadDictionary();
     initializeGame();
   },
+  beforeDestroy: function () {
+    window.removeEventListener('keydown', this.keypress);
+  },
   methods: {
+    keypress: function (e) {
+      switch(e.keyCode) {
+        case 90:
+          this.spawnVowel();
+        break;
+        case 88:
+          this.spawnConsonant();
+        break;
+      }
+    },
+    spawnVowel: function () {
+      for(let i = 0; i < State.board.characters.length; i++) {
+        if(State.board.characters[i] == null && State.board.tiles[i].type == "default") {
+          State.board.characters.splice(i,1, {
+            id: i,
+            letters: randomVowel(),
+            color: 0
+          });
+          return;
+        }
+      }
+      console.log("no empty spaces");
+    },
+    spawnConsonant: function () {
+      for(let i = 0; i < State.board.characters.length; i++) {
+        if(State.board.characters[i] == null && State.board.tiles[i].type == "default") {
+          State.board.characters.splice(i,1, {
+            id: i,
+            letters: randomCommonConsonant(),
+            color: 0
+          });
+          return;
+        }
+      }
+    },
+    //the following methods assume a 6x6 grid
+    checkEmptyLeft: function(array, index) {
+      return (index % 6 == 0 || !array[index-1])
+    },
+    checkEmptyRight: function(array, index) {
+      return ((index + 1) % 6 == 0 || !array[index+1])
+    },
+    checkEmptyTop: function(array, index) {
+      return (index < 6 || !array[index-6]);
+    },
+    checkEmptyBottom: function(array, index) {
+      return (index >= array.length - 6 || !array[index+6]);
+    },
     executeSpell: function () {
-      console.table(Store.data.characters);
-    }
+      // console.table(State.board.characters);
+      let lettersArray = State.board.characters.map(c => c == null ? '' : c.letters );
+      let wordsArray = [];
+      //horizontal
+      for(let i = 0; i < lettersArray.length; i++) {
+        let currentWord = "";
+        if(lettersArray[i] && lettersArray[i+1]) {
+          if(this.checkEmptyLeft(lettersArray, i)) {
+            let j = i;
+            while(!this.checkEmptyRight(lettersArray, j)) {
+              currentWord += lettersArray[j];
+              j++;
+            }
+            currentWord += lettersArray[j];
+          }
+        }
+        if(currentWord.length > 1) {
+          wordsArray.push(currentWord);
+        }
+      }
+      //vertical
+      console.log("vertical------");
+      for(let i = 0; i < lettersArray.length; i++) {
+        let currentWord = "";
+        if(lettersArray[i] && lettersArray[i+6]) {
+          if(this.checkEmptyTop(lettersArray, i)) {
+            let j = i;
+            while(!this.checkEmptyBottom(lettersArray, j)) {
+              currentWord += lettersArray[j];
+              j+=6;
+            }
+            currentWord += lettersArray[j];
+          }
+        }
+        if(currentWord.length > 1) {
+          wordsArray.push(currentWord);
+        }
+      }
+      //isolated letters
+      console.log("isolated------");
+      let isolatedLetters = [];
+      for(let i = 0; i < lettersArray.length; i++) {
+        if(!lettersArray[i]) {
+          continue;
+        }
+        if(this.checkEmptyTop(lettersArray, i) &&
+           this.checkEmptyBottom(lettersArray, i) &&
+           this.checkEmptyLeft(lettersArray, i) &&
+           this.checkEmptyRight(lettersArray, i)) {
+                isolatedLetters.push(lettersArray[i]);
+        }
+      }
+      let correct = wordsArray.map( w => checkDictionary(w) );
+      let damageDealt = 0;
+      let damageTaken = 0;
+      for(let i = 0; i < wordsArray.length; i++) {
+        if(checkDictionary(wordsArray[i])) {
+          damageDealt += this.dealDamage(wordsArray[i]);
+        } else {
+          damageTaken += wordsArray[i].length * 5;
+        }
+      }
+      damageTaken += isolatedLetters.length * 5;
+      console.log('you dealt '+damageDealt+' damage');
+      console.log(wordsArray);
+      console.log(correct);
+      console.log(isolatedLetters);
+      console.log('you took '+damageTaken+' damage');
+      initializeGame();
+    },
+    dealDamage(word) {
+      var damageChart = [0,5,10,15,20,30,40];
+      return damageChart[word.length-1];
+    },
   },
   components: {
     'board': Board,
