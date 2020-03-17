@@ -46,15 +46,33 @@ li {
   margin: auto;
 }
 
-.tile {
+.tile,
+#dragDummy {
   width: 70px;
   height: 70px;
   font-size: 65px;
+  font-family: "Sometimes Times";
   display: flex;
   align-items: center;
   justify-content: center;
+  user-select: none;
   /* background: grey; */
   /* border: 1px solid black; */
+}
+
+#dragDummy {
+  display: none;
+  text-transform: uppercase;
+  position: fixed;
+  margin: 0;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#dragDummy.show {
+  display: block;
 }
 
 .tile.over {
@@ -75,8 +93,45 @@ li {
   background-color: #282724;
 }
 
+.tile.monster:before {
+  content: "😈";
+  font-size: .8em;
+  /* transform: rotate(90deg); */
+}
+
 .char {
   cursor: pointer;
+  user-select: none;
+}
+
+.dragging .char {
+  opacity: .2;
+}
+
+#wordPreview {
+  background: #282724;
+  padding: 10px 20px;
+  display: none;
+  position: absolute;
+  pointer-events: none;
+  font-family: "Alegreya";
+  font-feature-settings: "tnum";
+  font-size: 20px;
+}
+
+#wordPreview p {
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+#wordPreview p span {
+  text-transform: none;
+  letter-spacing: normal;
+  font-style: italic;
+}
+
+#wordPreview.show {
+  display: block;
 }
 
 #gameboard button {

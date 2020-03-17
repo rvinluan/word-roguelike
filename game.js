@@ -26,6 +26,26 @@ function checkDictionary(word) {
   return window.dictionary.includes(word.toLowerCase());
 }
 
+//the following methods assume a 6x6 grid
+function checkEmptyLeft(array, index) {
+  return (index % 6 == 0 || !array[index-1])
+}
+function checkEmptyRight(array, index) {
+  return ((index + 1) % 6 == 0 || !array[index+1])
+}
+function checkEmptyTop(array, index) {
+  return (index < 6 || !array[index-6]);
+}
+function checkEmptyBottom(array, index) {
+  return (index >= array.length - 6 || !array[index+6]);
+}
+function checkIsolated(array, index) {
+  return checkEmptyTop(array, index) &&
+         checkEmptyBottom(array, index) &&
+         checkEmptyLeft(array, index) &&
+         checkEmptyRight(array, index);
+}
+
 /* helpers */
 function randomVowel() {
   let all = 'aeiou'.split('');
@@ -47,13 +67,28 @@ function randomDouble() {
   let all = 'th,er,ie,st,on'.split(',');
   return all[ Math.floor(Math.random() * all.length) ]
 }
+function damageCalc(word) {
+  var damageChart = [0,5,10,15,20,30,40];
+  return damageChart[word.length-1];
+}
 
 /* store */
 let State = {
   board: {
+    dragging: false,
+    previewOn: false,
+    previewTimeout: null,
+    previewElement: null,
+    preivewH: "",
+    previewV: "",
+    previewHValue: 0,
+    previewVValue: 0,
+    dragDummy: document.getElementById("dragDummy"),
     tiles: [],
-    characters: []
-  }
+    characters: [],
+    words: []
+  },
+
 }
 
 function initializeGame() {
@@ -83,11 +118,15 @@ function initializeGame() {
       }
     }
     charsArray = shuffle(charsArray);
-    let i = 3;
+    let i = 4;
     while(i > 0) {
       let r = Math.floor(Math.random() * 36);
       if(charsArray[r] == null && tilesArray[r].type == "default") {
-        tilesArray[r].type = "blocked";
+        if(i == 1) {
+          tilesArray[r].type = "monster";
+        } else {
+          tilesArray[r].type = "blocked";
+        }
         i--;
       }
     }
@@ -120,55 +159,194 @@ let Tile = {
 let Board = {
   data: function(){
     return {
-      state: State.board
+      state: State.board,
     }
   },
   created: function() {
   },
+  mounted: function() {
+    State.board.previewElement = document.getElementById("wordPreview");
+    this.updateWords();
+  },
   methods: {
     handleDragStart: function(e) {
-      let char;
-      if(e.target.closest) {
-        // console.log(e.target);
-        char = e.target.closest('.char')
-      } else {
-        // console.log("couldn't get closest, here was the target:");
-        // console.log(e.target);
-        // debugger;
-        char = e.target.parentElement;
+      let tile = e.currentTarget;
+      let char = tile.querySelector(".char");
+      if(char == null) {
+        return;
       }
+      State.board.dragging = true;
+      State.board.dragDummy.classList.add("show");
+      State.board.dragDummy.style.top = e.clientY - 35 + "px";
+      State.board.dragDummy.style.left = e.clientX - 35 + "px";
+      tile.classList.add("dragging")
+      State.board.dragDummy.innerHTML = char.innerHTML;
       let id = char.getAttribute('id').replace('char','');
-      e.dataTransfer.setData('text/plain', id);
-      // console.log(e);
+      State.board.dragTarget = id;
+      clearTimeout(State.board.previewTimeout);
+      State.board.previewOn = false;
+    },
+    handleDragMove: function(e) {
+      if(State.board.dragging) {
+        State.board.dragDummy.style.top = e.clientY - 35 + "px";
+        State.board.dragDummy.style.left = e.clientX - 35 + "px";
+      }
+      if(State.board.previewOn) {
+        State.board.previewElement.style.top = e.clientY + "px";
+        State.board.previewElement.style.left = e.clientX + "px";
+      }
     },
     handleDragEnter: function(e) {
-      e.target.classList.add("over")
+      if(State.board.dragging) {
+        e.currentTarget.classList.add("over")
+      } else {
+        //hover
+        let lettersArray = State.board.characters.map(c => c == null ? '' : c.letters );
+        let spaceID = parseInt(e.currentTarget.id.replace("tile",""));
+        if(!lettersArray[spaceID]) {
+          State.board.previewOn = false;
+          clearTimeout(State.board.previewTimeout);
+          return;
+        }
+        if(checkIsolated(lettersArray, spaceID)) {
+          // console.log("isolated:" + spaceID);
+          State.board.previewOn = false;
+          clearTimeout(State.board.previewTimeout);
+          return;
+        }
+        if(State.board.previewOn) {
+          this.wordPreview(spaceID);
+        } else {
+          clearTimeout(State.board.previewTimeout);
+          State.board.previewTimeout = setTimeout(function(){
+            State.board.previewOn = true;
+            State.board.previewElement.style.top = e.clientY + "px";
+            State.board.previewElement.style.left = e.clientX + "px";
+            this.wordPreview(spaceID);
+          }.bind(this),1000);
+        }
+      }
     },
     handleDragLeave: function(e) {
-      e.target.classList.remove("over")
+      e.target.classList.remove("over");
     },
     handleDrop: function(e) {
-      let tile;
-      if(e.target.closest) {
-        tile = e.target.closest(".tile");
-      } else {
-        debugger;
+      State.board.dragging = false;
+      State.board.dragDummy.classList.remove("show");
+      let tile = e.currentTarget;
+      tile.classList.remove("over");
+      document.querySelectorAll(".dragging").forEach(e => e.classList.remove("dragging"));
+      if(!State.board.dragTarget) {
+        return;
       }
-      tile.classList.remove("over")
       const dropID = tile.getAttribute("id").replace('tile','');
       //check for validity
-      if(tile.childElementCount > 0
-      || tile.classList.contains("blocked")) {
+      if(!tile.classList.contains("default")) {
         console.log("occupied");
         e.preventDefault();
         return;
       }
-      const originalID = e.dataTransfer.getData('text');
-      const tempChar = State.board.characters[originalID];
-      State.board.characters.splice(dropID, 1, tempChar);
-      State.board.characters.splice(originalID, 1, null);
-      // console.log(State.board.characters);
-      // console.log(this.State.characters);
+      if(tile.childElementCount > 0) {
+        const originalID = State.board.dragTarget;
+        const charA = State.board.characters[originalID];
+        const charB = State.board.characters[dropID];
+        State.board.characters.splice(dropID, 1, charA);
+        State.board.characters.splice(originalID, 1, charB);
+      } else {
+        const originalID = State.board.dragTarget;
+        const tempChar = State.board.characters[originalID];
+        State.board.characters.splice(dropID, 1, tempChar);
+        State.board.characters.splice(originalID, 1, null);
+      }
+      State.board.dragTarget = null;
+      this.updateWords();
+    },
+    updateWords: function() {
+      State.board.words = [];
+      let lettersArray = State.board.characters.map(c => c == null ? '' : c.letters );
+      //horizontal
+      for(let i = 0; i < lettersArray.length; i++) {
+        let currentWord = "";
+        let j = i;
+        if(lettersArray[i] && lettersArray[i+1]) {
+          if(checkEmptyLeft(lettersArray, i)) {
+            while(!checkEmptyRight(lettersArray, j)) {
+              currentWord += lettersArray[j];
+              j++;
+            }
+            currentWord += lettersArray[j];
+          }
+          if(currentWord.length > 1) {
+            State.board.words.push({
+              direction: 0,
+              word: currentWord,
+              startIndex: i,
+              endIndex: j
+            })
+          }
+        }
+
+      }
+      //vertical
+      for(let i = 0; i < lettersArray.length; i++) {
+        let currentWord = "";
+        let j = i;
+        if(lettersArray[i] && lettersArray[i+6]) {
+          if(checkEmptyTop(lettersArray, i)) {
+            while(!checkEmptyBottom(lettersArray, j)) {
+              currentWord += lettersArray[j];
+              j+=6;
+            }
+            currentWord += lettersArray[j];
+          }
+          if(currentWord.length > 1) {
+            State.board.words.push({
+              direction: 1,
+              word: currentWord,
+              startIndex: i,
+              endIndex: j
+            })
+          }
+        }
+      }
+    },
+    wordPreview: function(id) {
+      let index = parseInt(id);
+      //horizontal
+      State.board.previewH = "";
+      State.board.previewV = "";
+      State.board.previewHValue = "";
+      State.board.previewVValue = "";
+      for(let i = 0; i < State.board.words.length; i++) {
+        let w = State.board.words[i];
+        if(index >= w.startIndex &&
+          index <= w.endIndex &&
+          w.direction == 0) {
+          State.board.previewH = w.word;
+        }
+        if(index % 6 == w.startIndex % 6 &&
+          index >= w.startIndex &&
+          index <= w.endIndex &&
+          w.direction == 1) {
+          State.board.previewV = w.word;
+        }
+      }
+      if(State.board.previewH) {
+        if(checkDictionary(State.board.previewH)) {
+          State.board.previewHValue = damageCalc(State.board.previewH) + " Damage";
+        } else {
+          State.board.previewHValue = "Not a word";
+        }
+        State.board.previewH += ": ";
+      }
+      if(State.board.previewV) {
+        if(checkDictionary(State.board.previewV)) {
+          State.board.previewVValue = damageCalc(State.board.previewV) + " Damage";
+        } else {
+          State.board.previewVValue = "Not a word";
+        }
+        State.board.previewV += ": ";
+      }
     }
   },
   computed: {
@@ -178,22 +356,25 @@ let Board = {
     'char': Char
   },
   template: `
-    <div>
+    <div @mousemove="handleDragMove">
+      <div id="wordPreview" :class="{show: state.previewOn}">
+        <p>{{state.previewH}} <span>{{state.previewHValue}}</span> </p>
+        <p>{{state.previewV}} <span>{{state.previewVValue}}</span> </p>
+      </div>
       <tile
       v-bind:class="[state.tiles[index].type]"
       v-for="(t, index) in state.tiles"
       :key="index"
       :id="'tile'+index"
       @dragover.prevent.native
-      @dragenter.prevent.native="handleDragEnter"
-      @dragleave.native="handleDragLeave"
-      @drop.native="handleDrop"
+      @mousedown.native="handleDragStart"
+      @mouseover.prevent.native="handleDragEnter"
+      @mouseleave.native="handleDragLeave"
+      @mouseup.native="handleDrop"
       >
         <char
         v-if="state.characters[index]"
         :id="'char' + index"
-        draggable
-        @dragstart.stop.native="handleDragStart"
         >{{state.characters[index].letters}}</char>
       </tile>
     </div>`
@@ -249,93 +430,32 @@ var vm = new Vue({
         }
       }
     },
-    //the following methods assume a 6x6 grid
-    checkEmptyLeft: function(array, index) {
-      return (index % 6 == 0 || !array[index-1])
-    },
-    checkEmptyRight: function(array, index) {
-      return ((index + 1) % 6 == 0 || !array[index+1])
-    },
-    checkEmptyTop: function(array, index) {
-      return (index < 6 || !array[index-6]);
-    },
-    checkEmptyBottom: function(array, index) {
-      return (index >= array.length - 6 || !array[index+6]);
-    },
     executeSpell: function () {
-      // console.table(State.board.characters);
-      let lettersArray = State.board.characters.map(c => c == null ? '' : c.letters );
-      let wordsArray = [];
-      //horizontal
-      for(let i = 0; i < lettersArray.length; i++) {
-        let currentWord = "";
-        if(lettersArray[i] && lettersArray[i+1]) {
-          if(this.checkEmptyLeft(lettersArray, i)) {
-            let j = i;
-            while(!this.checkEmptyRight(lettersArray, j)) {
-              currentWord += lettersArray[j];
-              j++;
-            }
-            currentWord += lettersArray[j];
-          }
-        }
-        if(currentWord.length > 1) {
-          wordsArray.push(currentWord);
-        }
-      }
-      //vertical
-      console.log("vertical------");
-      for(let i = 0; i < lettersArray.length; i++) {
-        let currentWord = "";
-        if(lettersArray[i] && lettersArray[i+6]) {
-          if(this.checkEmptyTop(lettersArray, i)) {
-            let j = i;
-            while(!this.checkEmptyBottom(lettersArray, j)) {
-              currentWord += lettersArray[j];
-              j+=6;
-            }
-            currentWord += lettersArray[j];
-          }
-        }
-        if(currentWord.length > 1) {
-          wordsArray.push(currentWord);
-        }
-      }
       //isolated letters
-      console.log("isolated------");
+      let lettersArray = State.board.characters.map(c => c == null ? '' : c.letters );
       let isolatedLetters = [];
       for(let i = 0; i < lettersArray.length; i++) {
         if(!lettersArray[i]) {
           continue;
         }
-        if(this.checkEmptyTop(lettersArray, i) &&
-           this.checkEmptyBottom(lettersArray, i) &&
-           this.checkEmptyLeft(lettersArray, i) &&
-           this.checkEmptyRight(lettersArray, i)) {
-                isolatedLetters.push(lettersArray[i]);
+        if(checkIsolated(lettersArray, i)) {
+          isolatedLetters.push(lettersArray[i]);
         }
       }
-      let correct = wordsArray.map( w => checkDictionary(w) );
+      let correct = State.board.words.map( w => checkDictionary(w.word) );
       let damageDealt = 0;
       let damageTaken = 0;
-      for(let i = 0; i < wordsArray.length; i++) {
-        if(checkDictionary(wordsArray[i])) {
-          damageDealt += this.dealDamage(wordsArray[i]);
+      for(let i = 0; i < State.board.words.length; i++) {
+        if(checkDictionary(State.board.words[i].word)) {
+          damageDealt += damageCalc(State.board.words[i].word);
         } else {
-          damageTaken += wordsArray[i].length * 5;
+          damageTaken += State.board.words[i].word.length * 5;
         }
       }
       damageTaken += isolatedLetters.length * 5;
       console.log('you dealt '+damageDealt+' damage');
-      console.log(wordsArray);
-      console.log(correct);
-      console.log(isolatedLetters);
       console.log('you took '+damageTaken+' damage');
       initializeGame();
-    },
-    dealDamage(word) {
-      var damageChart = [0,5,10,15,20,30,40];
-      return damageChart[word.length-1];
     },
   },
   components: {
