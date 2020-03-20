@@ -98,9 +98,9 @@ function initializeGame() {
         type: "default",
         id: i
       })
-      if(i < 10) {
+      if(i < 3) {
         let randomLetter = i % 2 == 0 ? randomConsonant() : randomVowel();
-        if(i >= 8 && Math.random() > 0.5) {
+        if(i >= 2 && Math.random() > 0.5) {
           randomLetter = randomDouble();
           // if(Math.random() > 0.5) {
           //   randomLetter = randomConsonant();
@@ -122,7 +122,9 @@ function initializeGame() {
     while(i > 0) {
       let r = Math.floor(Math.random() * 36);
       if(charsArray[r] == null && tilesArray[r].type == "default") {
-        if(i == 1) {
+        if(i == 2) {
+          tilesArray[r].type = "treasure";
+        } else if(i == 1) {
           tilesArray[r].type = "monster";
         } else {
           tilesArray[r].type = "blocked";

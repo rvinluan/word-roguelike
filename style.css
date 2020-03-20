@@ -99,6 +99,12 @@ li {
   /* transform: rotate(90deg); */
 }
 
+.tile.treasure:before {
+  content: "💰";
+  font-size: .8em;
+  /* transform: rotate(90deg); */
+}
+
 .char {
   cursor: pointer;
   user-select: none;
