@@ -28,6 +28,11 @@ li {
   width: 40vw;
 }
 
+.wand-desc span {
+  text-transform: uppercase;
+  opacity: .5;
+}
+
 #gameboard {
   /* font-family: "Domaine Display Condensed Test"; */
   font-family: "Sometimes Times";

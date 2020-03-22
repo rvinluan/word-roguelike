@@ -11,21 +11,14 @@
     <div id="game" @keydown="keypress">
       <div id="info-panel">
         <p>You have {{ health }} health.</p>
-        <p>You have {{ mana }} mana.</p>
+        <!-- <p>You have {{ mana }} mana.</p> -->
         <hr>
         <p>Equipped wand:</p>
-        <p>[Z] Spawn a random vowel.</p>
-        <p>[X] Spawn a random consonant.</p>
+        <p class="wand-desc">[A] Spawn randomly: <span>[{{bagContents(0)}}].</span></p>
+        <p class="wand-desc">[S] Spawn randomly: <span>[{{bagContents(1)}}].</span></p>
+        <p class="wand-desc">[D] Spawn randomly: <span>[{{bagContents(2)}}].</span></p>
+        <p class="wand-desc">[F] Spawn randomly: <span>[{{bagContents(3)}}].</span></p>
         <hr>
-        <p>Equipped scrolls:</p>
-        <p>No equipped scrolls.</p>
-        <hr>
-        <p>Equipped skills:</p>
-        <ul>
-          <li>Restore 5 mana every time you make a 3 letter word.</li>
-          <li>Restore 5 mana every time you make a word with a green letter.</li>
-          <li>Get 3 gold every time you make a word with a double letter.</li>
-        </ul>
         <p class="events"></p>
       </div>
       <div id="gameboard">

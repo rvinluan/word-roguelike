@@ -64,12 +64,31 @@ function randomCommonConsonant() {
   return all[ Math.floor(Math.random() * all.length) ]
 }
 function randomDouble() {
-  let all = 'th,er,ie,st,on'.split(',');
+  let all = 'an,ar,ch,er,ed,in,le,on,re,sh,st,th'.split(',');
   return all[ Math.floor(Math.random() * all.length) ]
 }
 function damageCalc(word) {
   var damageChart = [0,5,10,15,20,30,40];
   return damageChart[word.length-1];
+}
+
+function assembleBags() {
+  let bags = [];
+  for(let i = 0; i < 4; i++) {
+    bags[i] = []
+    bags[i].push(randomVowel());
+    bags[i].push(randomVowel());
+    bags[i].push(randomDouble());
+    bags[i].push(randomCommonConsonant());
+    if(i % 2 == 0) {
+      bags[i].push(randomCommonConsonant());
+    } else {
+      bags[i].push(randomConsonant());
+    }
+    bags[i].push(randomConsonant());
+  }
+  console.log(bags);
+  return bags;
 }
 
 /* store */
@@ -86,9 +105,9 @@ let State = {
     dragDummy: document.getElementById("dragDummy"),
     tiles: [],
     characters: [],
-    words: []
+    words: [],
+    bags: assembleBags(),
   },
-
 }
 
 function initializeGame() {
@@ -399,11 +418,17 @@ var vm = new Vue({
   methods: {
     keypress: function (e) {
       switch(e.keyCode) {
-        case 90:
-          this.spawnVowel();
+        case 65:
+          this.spawnFromBag(0);
         break;
-        case 88:
-          this.spawnConsonant();
+        case 83:
+          this.spawnFromBag(1);
+        break;
+        case 68:
+          this.spawnFromBag(2);
+        break;
+        case 70:
+          this.spawnFromBag(3);
         break;
       }
     },
@@ -431,6 +456,30 @@ var vm = new Vue({
           return;
         }
       }
+    },
+    spawnFromBag: function(which) {
+      let bag = State.board.bags[which];
+      for(let i = 0; i < State.board.characters.length; i++) {
+        if(State.board.characters[i] == null && State.board.tiles[i].type == "default") {
+          State.board.characters.splice(i,1, {
+            id: i,
+            letters: bag[ Math.floor(Math.random() * bag.length) ],
+            color: 0
+          });
+          return;
+        }
+      }
+    },
+    bagContents: function(which) {
+      let outputString = "";
+      let bag = State.board.bags[which];
+      for(let i = 0; i < bag.length; i++) {
+        outputString += bag[i];
+        if(i < bag.length - 1) {
+          outputString += ", ";
+        }
+      }
+      return outputString;
     },
     executeSpell: function () {
       //isolated letters
